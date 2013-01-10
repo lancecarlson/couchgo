@@ -33,6 +33,10 @@ err := lc.Get(id, lazyCat)
 fmt.Println(lazyCat)
 
 lc.Delete(id, rev)
-````
+```
 
-TODO: BulkSave :)
+TODO (Top to bottom priority)
+* BulkSave
+* COPY
+* _changes
+* Attachments
