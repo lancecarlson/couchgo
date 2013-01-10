@@ -6,7 +6,7 @@ CouchDB Adapter for Go. Supports BulkSave and emulates couch.js API
 API Overview
 ============
 
-```
+```go
 c := NewClient("http://localhost:5984")
 
 c.CreateDB("myleathercouch")
