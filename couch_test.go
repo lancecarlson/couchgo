@@ -2,7 +2,7 @@ package couch
 
 import (
 	"testing"
-//	"fmt"
+	"fmt"
 )
 
 const (
@@ -10,10 +10,12 @@ const (
 	DB = "http://localhost:5984/couch-go-testdb-data"
 )
 
-/*func TestAllDBs(t *testing.T) {
+func TestAllDBs(t *testing.T) {
 	c, _ := NewClientURL(URL)
 	results, err := c.AllDBs()
-	
+
+	fmt.Println(results)
+
 	if err != nil {
 		t.Error(err)
 	}
@@ -74,7 +76,7 @@ func TestGetAndSave(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-}*/
+}
 
 func TestDelete(t *testing.T) {
 	c, _ := NewClientURL(DB)
@@ -91,8 +93,22 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+type Cat struct {
+	Name string
+	Cool bool
+}
 
-/*func TestExec(t *testing.T) {
-	u, _ := url.Parse(URL)
-	exec("GET", u)
-}*/
+func TestBulkSave(t *testing.T) {
+	c, _ := NewClientURL(DB)
+	
+	cat1 := Cat{Name: "Hakki", Cool: true}
+	cat2 := Cat{Name: "Farb", Cool: false}
+	cats := []interface{}{}
+	cats = append(cats, cat1, cat2)
+
+	err := c.BulkSave(cats...)
+	if err != nil {
+		t.Error(err)
+	}
+}
+

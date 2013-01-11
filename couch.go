@@ -110,11 +110,26 @@ func (c *Client) Delete(id string, rev string) error {
 	return nil
 }
 
-func (c *Client) BuikSave() {
+type BulkDoc struct {
+	Docs interface{} `json:"docs"`
+}
+
+func (c *Client) BulkSave(docs ...interface{}) error {
+	bulkDoc := &BulkDoc{Docs: docs}
+	res := []Response{}
+	_, err := c.execJSON("POST", c.DBPath() + "/_bulk_docs", &res, &bulkDoc, nil, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Client) DBPath() string {
+	return c.URL.Path
 }
 
 func (c *Client) DocPath(id string) string {
-	return c.URL.Path + "/" + id
+	return c.DBPath() + "/" + id
 }
 
 func (c *Client) handleResponseError(code int, resBytes []byte) error {

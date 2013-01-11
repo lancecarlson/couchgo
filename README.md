@@ -36,7 +36,7 @@ lc.Delete(id, rev)
 ```
 
 TODO (Top to bottom priority)
-* BulkSave
+* Query/View
 * COPY
 * _changes
 * Attachments
