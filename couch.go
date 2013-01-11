@@ -110,14 +110,14 @@ func (c *Client) Delete(id string, rev string) error {
 	return nil
 }
 
-type BulkDoc struct {
+type BulkSaveRequest struct {
 	Docs interface{} `json:"docs"`
 }
 
 func (c *Client) BulkSave(docs ...interface{}) error {
-	bulkDoc := &BulkDoc{Docs: docs}
+	bulkSaveRequest := &BulkSaveRequest{Docs: docs}
 	res := []Response{}
-	_, err := c.execJSON("POST", c.DBPath() + "/_bulk_docs", &res, &bulkDoc, nil, nil)
+	_, err := c.execJSON("POST", c.DBPath() + "/_bulk_docs", &res, &bulkSaveRequest, nil, nil)
 	if err != nil {
 		return err
 	}
