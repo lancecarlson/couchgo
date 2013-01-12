@@ -124,6 +124,31 @@ func (c *Client) BulkSave(docs ...interface{}) error {
 	return nil
 }
 
+type MultiDocResponse struct {
+	TotalRows uint64 `json:"total_rows"`
+	Offset uint64 `json:"offset"`
+	Rows []Row `json:"rows"`
+}
+
+type Row struct {
+	ID *string `json:"id"`
+	Key *string `json:"key"`
+	Value interface{}
+}
+
+func (c *Client) ViewRaw(design string, name string, options *url.Values) (*MultiDocResponse, error) {
+	res, _, err := c.execRead("GET", c.DBPath() + "/_design/" + design + "/_view/" + name, nil, options, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	multiDocResponse := &MultiDocResponse{}
+	if err = json.Unmarshal(res, multiDocResponse); err != nil {
+		return nil, err
+	}
+	return multiDocResponse, nil
+}
+
 func (c *Client) DBPath() string {
 	return c.URL.Path
 }

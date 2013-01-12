@@ -3,6 +3,7 @@ package couch
 import (
 	"testing"
 	"fmt"
+	"net/url"
 )
 
 const (
@@ -10,6 +11,7 @@ const (
 	DB = "http://localhost:5984/couch-go-testdb-data"
 )
 
+/*
 func TestAllDBs(t *testing.T) {
 	c, _ := NewClientURL(URL)
 	results, err := c.AllDBs()
@@ -110,5 +112,33 @@ func TestBulkSave(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+type Dog struct {
+	Name string
+}
+
+func TestView(t *testing.T) {
+	c, _ := NewClientURL(DB)
+
+	dogs := []Row{{Value: Dog{}}}
+	err := c.View("dog", "all", nil, dogs)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(dogs)
+}*/
+
+func TestViewRaw(t *testing.T) {
+	c, _ := NewClientURL(DB)
+
+	params := url.Values{"limit": []string{"2"}}
+	res, err := c.ViewRaw("dog", "all", &params)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println(res)
 }
 
