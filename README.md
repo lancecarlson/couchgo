@@ -33,10 +33,17 @@ err := lc.Get(id, lazyCat)
 fmt.Println(lazyCat)
 
 lc.Delete(id, rev)
+
+params := url.Values{"limit": []string{"5"}}
+results, err := c.View("myapp", "all", &params)
+if err != nil {
+   // Do whatever
+}
+
+fmt.Println(results)
 ```
 
 TODO (Top to bottom priority)
-* Query/View
 * COPY
 * _changes
 * Attachments
