@@ -62,13 +62,20 @@ func TestSave(t *testing.T) {
 		
 }
 
+type Cow struct {
+	ID string `json:"_id"`
+	Rev string `json:"_rev"`
+	Name string
+}
+
 func TestSaveWithId(t *testing.T) {
 	c, _ := NewClientURL(DB)
 	
-	doc := map[string]string{}
-	c.Get("testid", &doc)
-	c.Delete("testid", doc["_rev"])
-	_, _, err := c.Save(map[string]string{"_id": "testid", "test1": "value1", "test2": "value2"})
+	cow := new(Cow)
+	c.Get("testcow", cow)
+	c.Delete("testcow", cow.Rev)
+	fmt.Println(cow)
+	_, _, err := c.Save(Cow{ID: "testcow", Name: "Fred"})
 	if err != nil {
 		t.Error(err)
 	}
@@ -153,4 +160,3 @@ func TestViewRaw(t *testing.T) {
 
 	fmt.Println(res)
 }
-

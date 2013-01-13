@@ -73,7 +73,10 @@ func (c *Client) Save(doc interface{}) (string, string, error) {
 
 	// Warning - this converts doc into a map[string]interface{}
 	if rev == "" {
-		StripRev(doc)
+		doc, err = StripRev(doc)
+		if err != nil {
+			return "", "", nil
+		}
 	}
 
 	res := Response{}
