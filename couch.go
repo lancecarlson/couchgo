@@ -66,9 +66,14 @@ func (c *Client) DeleteDB(name string) (map[string] interface{}, error) {
 }
 
 func (c *Client) Save(doc interface{}) (string, string, error) {
-	id, _, err := ParseIdRev(doc)
+	id, rev, err := ParseIdRev(doc)
 	if err != nil {
 		return "", "", err
+	}
+
+	// Warning - this converts doc into a map[string]interface{}
+	if rev == "" {
+		StripRev(doc)
 	}
 
 	res := Response{}
@@ -239,6 +244,35 @@ type IdRev struct {
 	ID string `json:"_id"`
 	Rev string `json:"_rev"`
 }
+
+func StripRev(doc interface{}) (mapDoc map[string]interface{}, err error) {
+	docJson, err := json.Marshal(doc)
+	if err != nil {
+		return 
+	}
+
+	err = json.Unmarshal(docJson, &mapDoc)
+	if err != nil {
+		return 
+	}
+
+	if _, ok := mapDoc["_rev"]; ok {
+		delete(mapDoc, "_rev")
+	}
+	return 
+}
+/*func StripIdRev(doc interface{}) (docJson []byte, id, rev string, err error) {
+	idRev := &IdRev{}
+	err := json.Unmarshal(docJson, &idRev)
+	if err != nil {
+		return 
+	}
+	if _, ok := mapDoc["_rev"]; ok {
+		rev = idRev.Rev
+		delete(mapDoc, "_rev")
+	}
+	docJson, err := json.Marhsal(mapDoc)
+}*/
 
 func ParseIdRev(doc interface{}) (string, string, error) {
 	docJson, err := json.Marshal(doc)

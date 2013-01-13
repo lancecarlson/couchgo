@@ -11,7 +11,6 @@ const (
 	DB = "http://localhost:5984/couch-go-testdb-data"
 )
 
-/*
 func TestAllDBs(t *testing.T) {
 	c, _ := NewClientURL(URL)
 	results, err := c.AllDBs()
@@ -61,6 +60,18 @@ func TestSave(t *testing.T) {
 		t.Error(err)
 	}
 		
+}
+
+func TestSaveWithId(t *testing.T) {
+	c, _ := NewClientURL(DB)
+	
+	doc := map[string]string{}
+	c.Get("testid", &doc)
+	c.Delete("testid", doc["_rev"])
+	_, _, err := c.Save(map[string]string{"_id": "testid", "test1": "value1", "test2": "value2"})
+	if err != nil {
+		t.Error(err)
+	}
 }
 
 func TestGetAndSave(t *testing.T) {
@@ -118,6 +129,7 @@ type Dog struct {
 	Name string
 }
 
+/*
 func TestView(t *testing.T) {
 	c, _ := NewClientURL(DB)
 
