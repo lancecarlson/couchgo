@@ -157,12 +157,39 @@ func (c *Client) ViewRaw(design string, name string, options *url.Values) (*Mult
 	return multiDocResponse, nil
 }
 
+func (c *Client) Copy(src string, dest string, destRev *string) (resp *http.Response, err error) {
+	if destRev != nil {
+		dest += "?rev=" + *destRev
+	}
+
+	req, err := c.NewRequest("COPY", c.UrlString(c.DocPath(src), nil), nil, nil)
+	req.Header.Add("Destination", dest)
+	if err != nil {
+		return
+	}
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	return 
+}
+
 func (c *Client) DBPath() string {
 	return c.URL.Path
 }
 
 func (c *Client) DocPath(id string) string {
 	return c.DBPath() + "/" + id
+}
+
+func (c *Client) NewRequest(method, url string, body io.Reader, headers *http.Header) (req *http.Request, err error) {
+	req, err = http.NewRequest(method, url, body)
+	if headers != nil {
+		req.Header = *headers
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+	return
 }
 
 func (c *Client) handleResponseError(code int, resBytes []byte) error {
@@ -174,6 +201,15 @@ func (c *Client) handleResponseError(code int, resBytes []byte) error {
 		return fmt.Errorf(fmt.Sprintf("Code: %d, Error: %s, Reason: %s", code, res.Error, res.Reason))
 	}
 	return nil
+}
+
+func (c *Client) UrlString(path string, values *url.Values) string {
+	u := *c.URL
+	u.Path = path
+	if values != nil {
+		u.RawQuery = values.Encode()
+	}
+	return u.String()
 }
 
 func (c *Client) execJSON(method string, path string, result interface{}, doc interface{}, values *url.Values, headers *http.Header) (int, error) {
@@ -204,24 +240,15 @@ func (c *Client) execRead(method string, path string, doc interface{}, values *u
 }
 
 func (c *Client) exec(method string, path string, doc interface{}, values *url.Values, headers *http.Header) (io.Reader, int, error) {
-	var execUrl = *c.URL
-	execUrl.Path = path
-	if values != nil {
-		execUrl.RawQuery = values.Encode()
-	}
-
 	reqReader, err := docReader(doc)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	req, err := http.NewRequest(method, execUrl.String(), reqReader)
-	if headers != nil {
-		req.Header = *headers
+	req, err := c.NewRequest(method, c.UrlString(path, values), reqReader, headers)
+	if err != nil {
+		return nil, 0, err
 	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
-
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, 0, err

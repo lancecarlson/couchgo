@@ -160,3 +160,13 @@ func TestViewRaw(t *testing.T) {
 
 	fmt.Println(res)
 }
+
+func TestCopy(t *testing.T) {
+	c, _ := NewClientURL(DB)
+	
+	res, err := c.Copy("explicit", "explicit-copy", nil)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(res)
+}
