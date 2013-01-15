@@ -44,6 +44,6 @@ fmt.Println(results)
 ```
 
 TODO (Top to bottom priority)
-* COPY
+* Replication
 * _changes
 * Attachments
