@@ -20,7 +20,7 @@ type Cat struct {
 
 cat := Cat{Name: "Octo", Cool: true}
 
-resp, err := lc.Save(cat)
+res, err := lc.Save(cat)
 
 if err != nil {
   // Do whatever
