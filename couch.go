@@ -66,17 +66,15 @@ func (c *Client) DeleteDB(name string) (map[string] interface{}, error) {
 }
 
 func (c *Client) Save(doc interface{}) (string, string, error) {
-	id, rev, err := ParseIdRev(doc)
+	id, _, err := ParseIdRev(doc)
 	if err != nil {
 		return "", "", err
 	}
 
 	// Warning - this converts doc into a map[string]interface{}
-	if rev == "" {
-		doc, err = StripRev(doc)
-		if err != nil {
-			return "", "", nil
-		}
+	doc, err = StripIdRev(doc)
+	if err != nil {
+		return "", "", nil
 	}
 
 	res := Response{}
@@ -119,17 +117,23 @@ func (c *Client) Delete(id string, rev string) error {
 }
 
 type BulkSaveRequest struct {
-	Docs interface{} `json:"docs"`
+	Docs []map[string]interface{} `json:"docs"`
 }
 
-func (c *Client) BulkSave(docs ...interface{}) error {
-	bulkSaveRequest := &BulkSaveRequest{Docs: docs}
-	res := []Response{}
-	_, err := c.execJSON("POST", c.DBPath() + "/_bulk_docs", &res, &bulkSaveRequest, nil, nil)
+func (c *Client) BulkSave(docs ...interface{}) (resp *http.Response, err error) {
+	sliceDocs, err := StripIdRevSlice(docs)
+	bulkSaveRequest := &BulkSaveRequest{Docs: sliceDocs}
+	reader, err := docReader(bulkSaveRequest)
+		
+	req, err := c.NewRequest("POST", c.UrlString(c.DBPath() + "/_bulk_docs", nil), reader, nil)
 	if err != nil {
-		return err
+		return
 	}
-	return nil
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	return 
 }
 
 type MultiDocResponse struct {
@@ -275,21 +279,49 @@ type IdRev struct {
 	Rev string `json:"_rev"`
 }
 
-func StripRev(doc interface{}) (mapDoc map[string]interface{}, err error) {
+func Remarshal(doc interface{}, newDoc interface{}) (err error) {
 	docJson, err := json.Marshal(doc)
 	if err != nil {
 		return 
 	}
 
-	err = json.Unmarshal(docJson, &mapDoc)
+	err = json.Unmarshal(docJson, newDoc)
 	if err != nil {
 		return 
 	}
+	return
+}
 
+func StripIdRev(doc interface{}) (mapDoc map[string]interface{}, err error) {
+	err = Remarshal(doc, &mapDoc)
+	if _, ok := mapDoc["_id"]; ok {
+		if mapDoc["_id"] == "" {
+			delete(mapDoc, "_id")
+		}
+	}
 	if _, ok := mapDoc["_rev"]; ok {
-		delete(mapDoc, "_rev")
+		if mapDoc["_rev"] == "" {
+			delete(mapDoc, "_rev")
+		}
 	}
 	return 
+}
+
+func StripIdRevSlice(docs interface{}) (sliceDoc []map[string]interface{}, err error) {
+	err = Remarshal(docs, &sliceDoc)
+	for _, doc := range sliceDoc {
+		if _, ok := doc["_id"]; ok {
+			if doc["_id"] == "" {
+				delete(doc, "_id")
+			}
+		}
+		if _, ok := doc["_rev"]; ok {
+			if doc["_rev"] == "" {
+				delete(doc, "_rev")
+			}
+		}
+	}
+	return
 }
 /*func StripIdRev(doc interface{}) (docJson []byte, id, rev string, err error) {
 	idRev := &IdRev{}

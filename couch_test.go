@@ -106,7 +106,6 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
 	err = c.Delete(id, rev)
 	if err != nil {
 		t.Error(err)
@@ -114,6 +113,8 @@ func TestDelete(t *testing.T) {
 }
 
 type Cat struct {
+	ID string `json:"_id"`
+	Rev string `json:"_rev"`
 	Name string
 	Cool bool
 }
@@ -126,17 +127,18 @@ func TestBulkSave(t *testing.T) {
 	cats := []interface{}{}
 	cats = append(cats, cat1, cat2)
 
-	err := c.BulkSave(cats...)
+	resp, err := c.BulkSave(cats...)
 	if err != nil {
 		t.Error(err)
 	}
+	fmt.Println(resp)
 }
 
+/*
 type Dog struct {
 	Name string
 }
 
-/*
 func TestView(t *testing.T) {
 	c, _ := NewClientURL(DB)
 
