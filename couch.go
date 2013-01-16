@@ -65,20 +65,18 @@ func (c *Client) DeleteDB(name string) (map[string] interface{}, error) {
 	return res, nil
 }
 
-func (c *Client) Save(doc interface{}) (string, string, error) {
+func (c *Client) Save(doc interface{}) (res *Response, err error) {
 	id, _, err := ParseIdRev(doc)
 	if err != nil {
-		return "", "", err
+		return
 	}
 
 	// Warning - this converts doc into a map[string]interface{}
 	doc, err = StripIdRev(doc)
 	if err != nil {
-		return "", "", nil
+		return
 	}
 
-	res := Response{}
-	
 	// If no id is provided, we assume POST
 	if id == "" {
 		_, err = c.execJSON("POST", c.URL.Path, &res, doc, nil, nil)
@@ -87,14 +85,14 @@ func (c *Client) Save(doc interface{}) (string, string, error) {
 	}
 
 	if err != nil {
-		return "", "", err
+		return
 	}
 	
 	if res.Error != "" {
-		return "", "", fmt.Errorf(fmt.Sprintf("%s: %s", res.Error, res.Reason))
+		return res, fmt.Errorf(fmt.Sprintf("%s: %s", res.Error, res.Reason))
 	}
 
-	return res.ID, res.Rev, nil
+	return
 }
 
 func (c *Client) Get(id string, doc interface{}) error {
