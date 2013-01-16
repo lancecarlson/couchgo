@@ -127,7 +127,7 @@ func TestBulkSave(t *testing.T) {
 	cats := []interface{}{}
 	cats = append(cats, cat1, cat2)
 
-	resp, err := c.BulkSave(cats...)
+	resp, _, err := c.BulkSave(cats...)
 	if err != nil {
 		t.Error(err)
 	}
@@ -166,7 +166,7 @@ func TestViewRaw(t *testing.T) {
 func TestCopy(t *testing.T) {
 	c, _ := NewClientURL(DB)
 	
-	res, err := c.Copy("explicit", "explicit-copy", nil)
+	res, _, err := c.Copy("explicit", "explicit-copy", nil)
 	if err != nil {
 		t.Error(err)
 	}
