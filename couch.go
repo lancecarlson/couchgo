@@ -71,12 +71,6 @@ func (c *Client) Save(doc interface{}) (string, string, error) {
 		return "", "", err
 	}
 
-	// Warning - this converts doc into a map[string]interface{}
-	doc, err = StripIdRev(doc)
-	if err != nil {
-		return "", "", nil
-	}
-
 	res := Response{}
 	
 	// If no id is provided, we assume POST
@@ -117,12 +111,11 @@ func (c *Client) Delete(id string, rev string) error {
 }
 
 type BulkSaveRequest struct {
-	Docs []map[string]interface{} `json:"docs"`
+	Docs []interface{} `json:"docs"`
 }
 
 func (c *Client) BulkSave(docs ...interface{}) (resp *http.Response, err error) {
-	sliceDocs, err := StripIdRevSlice(docs)
-	bulkSaveRequest := &BulkSaveRequest{Docs: sliceDocs}
+	bulkSaveRequest := &BulkSaveRequest{Docs: docs}
 	reader, err := docReader(bulkSaveRequest)
 		
 	req, err := c.NewRequest("POST", c.UrlString(c.DBPath() + "/_bulk_docs", nil), reader, nil)
@@ -138,17 +131,17 @@ func (c *Client) BulkSave(docs ...interface{}) (resp *http.Response, err error) 
 
 type MultiDocResponse struct {
 	TotalRows uint64 `json:"total_rows"`
-	Offset uint64 `json:"offset"`
-	Rows []Row `json:"rows"`
+	Offset uint64
+	Rows []Row
 }
 
 type Row struct {
-	ID *string `json:"id"`
-	Key *string `json:"key"`
+	ID *string
+	Key *string
 	Value interface{}
 }
 
-func (c *Client) ViewRaw(design string, name string, options *url.Values) (*MultiDocResponse, error) {
+func (c *Client) View(design string, name string, options *url.Values) (*MultiDocResponse, error) {
 	res, _, err := c.execRead("GET", c.DBPath() + "/_design/" + design + "/_view/" + name, nil, options, nil)
 	if err != nil {
 		return nil, err
@@ -291,50 +284,6 @@ func Remarshal(doc interface{}, newDoc interface{}) (err error) {
 	}
 	return
 }
-
-func StripIdRev(doc interface{}) (mapDoc map[string]interface{}, err error) {
-	err = Remarshal(doc, &mapDoc)
-	if _, ok := mapDoc["_id"]; ok {
-		if mapDoc["_id"] == "" {
-			delete(mapDoc, "_id")
-		}
-	}
-	if _, ok := mapDoc["_rev"]; ok {
-		if mapDoc["_rev"] == "" {
-			delete(mapDoc, "_rev")
-		}
-	}
-	return 
-}
-
-func StripIdRevSlice(docs interface{}) (sliceDoc []map[string]interface{}, err error) {
-	err = Remarshal(docs, &sliceDoc)
-	for _, doc := range sliceDoc {
-		if _, ok := doc["_id"]; ok {
-			if doc["_id"] == "" {
-				delete(doc, "_id")
-			}
-		}
-		if _, ok := doc["_rev"]; ok {
-			if doc["_rev"] == "" {
-				delete(doc, "_rev")
-			}
-		}
-	}
-	return
-}
-/*func StripIdRev(doc interface{}) (docJson []byte, id, rev string, err error) {
-	idRev := &IdRev{}
-	err := json.Unmarshal(docJson, &idRev)
-	if err != nil {
-		return 
-	}
-	if _, ok := mapDoc["_rev"]; ok {
-		rev = idRev.Rev
-		delete(mapDoc, "_rev")
-	}
-	docJson, err := json.Marhsal(mapDoc)
-}*/
 
 func ParseIdRev(doc interface{}) (string, string, error) {
 	docJson, err := json.Marshal(doc)

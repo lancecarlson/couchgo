@@ -63,8 +63,8 @@ func TestSave(t *testing.T) {
 }
 
 type Cow struct {
-	ID string `json:"_id"`
-	Rev string `json:"_rev"`
+	ID string `json:"_id,omitempty"`
+	Rev string `json:"_rev,omitempty"`
 	Name string
 }
 
@@ -113,8 +113,8 @@ func TestDelete(t *testing.T) {
 }
 
 type Cat struct {
-	ID string `json:"_id"`
-	Rev string `json:"_rev"`
+	ID string `json:"_id,omitempty"`
+	Rev string `json:"_rev,omitempty"`
 	Name string
 	Cool bool
 }
@@ -131,31 +131,16 @@ func TestBulkSave(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	fmt.Println("BulkSave")
 	fmt.Println(resp)
-}
-
-/*
-type Dog struct {
-	Name string
+	fmt.Println("/BulkSave")
 }
 
 func TestView(t *testing.T) {
 	c, _ := NewClientURL(DB)
 
-	dogs := []Row{{Value: Dog{}}}
-	err := c.View("dog", "all", nil, dogs)
-	if err != nil {
-		t.Error(err)
-	}
-
-	fmt.Println(dogs)
-}*/
-
-func TestViewRaw(t *testing.T) {
-	c, _ := NewClientURL(DB)
-
 	params := url.Values{"limit": []string{"2"}}
-	res, err := c.ViewRaw("dog", "all", &params)
+	res, err := c.View("dog", "all", &params)
 	if err != nil {
 		t.Error(err)
 	}
