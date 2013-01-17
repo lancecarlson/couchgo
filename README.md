@@ -20,7 +20,7 @@ type Cat struct {
 
 cat := Cat{Name: "Octo", Cool: true}
 
-id, rev, err := lc.Save(cat)
+res, err := lc.Save(cat)
 
 if err != nil {
   // Do whatever
@@ -28,14 +28,14 @@ if err != nil {
 
 lazyCat := Cat{}
 
-err := lc.Get(id, lazyCat)
+err := lc.Get(res.ID, lazyCat)
 
 fmt.Println(lazyCat)
 
-lc.Delete(id, rev)
+lc.Delete(res.ID, res.Rev)
 
 params := url.Values{"limit": []string{"5"}}
-results, err := c.View("myapp", "all", &params)
+results, err := c.ViewRaw("myapp", "all", &params)
 if err != nil {
    // Do whatever
 }

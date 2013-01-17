@@ -47,19 +47,12 @@ func TestCreateAndDeleteDB(t *testing.T) {
 func TestSave(t *testing.T) {
 	c, _ := NewClientURL(DB)
 
-	id, rev, err := c.Save(map[string]string{"test1": "value1", "test2": "value2"})
+	res, err := c.Save(map[string]string{"test1": "value1", "test2": "value2"})
 	if err != nil {
 		t.Error(err)
 	}
-
-	if id == "" {
-		t.Error(err)
-	}
-
-	if rev == "" {
-		t.Error(err)
-	}
-		
+	fmt.Println("Save")
+	fmt.Println(res)
 }
 
 type Cow struct {
@@ -75,10 +68,12 @@ func TestSaveWithId(t *testing.T) {
 	c.Get("testcow", cow)
 	c.Delete("testcow", cow.Rev)
 	fmt.Println(cow)
-	_, _, err := c.Save(Cow{ID: "testcow", Name: "Fred"})
+	res, err := c.Save(Cow{ID: "testcow", Name: "Fred"})
 	if err != nil {
 		t.Error(err)
 	}
+	fmt.Println("SaveWithId")
+	fmt.Println(res)
 }
 
 func TestGetAndSave(t *testing.T) {
@@ -92,21 +87,23 @@ func TestGetAndSave(t *testing.T) {
 
 	doc["updatekey"] = "updated"
 
-	_, _, err = c.Save(doc)
+	res, err := c.Save(doc)
 	if err != nil {
 		t.Error(err)
 	}
+	fmt.Println("GetAndSave")
+	fmt.Println(res)
 }
 
 func TestDelete(t *testing.T) {
 	c, _ := NewClientURL(DB)
 	
 	doc := map[string]string{"_id": "deleteme"}
-	id, rev, err := c.Save(doc)
+	res, err := c.Save(doc)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Delete(id, rev)
+	err = c.Delete(res.ID, res.Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -127,7 +124,7 @@ func TestBulkSave(t *testing.T) {
 	cats := []interface{}{}
 	cats = append(cats, cat1, cat2)
 
-	resp, err := c.BulkSave(cats...)
+	resp, _, err := c.BulkSave(cats...)
 	if err != nil {
 		t.Error(err)
 	}
@@ -151,7 +148,7 @@ func TestView(t *testing.T) {
 func TestCopy(t *testing.T) {
 	c, _ := NewClientURL(DB)
 	
-	res, err := c.Copy("explicit", "explicit-copy", nil)
+	res, _, err := c.Copy("explicit", "explicit-copy", nil)
 	if err != nil {
 		t.Error(err)
 	}

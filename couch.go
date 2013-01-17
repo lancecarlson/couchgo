@@ -65,14 +65,12 @@ func (c *Client) DeleteDB(name string) (map[string] interface{}, error) {
 	return res, nil
 }
 
-func (c *Client) Save(doc interface{}) (string, string, error) {
+func (c *Client) Save(doc interface{}) (res *Response, err error) {
 	id, _, err := ParseIdRev(doc)
 	if err != nil {
-		return "", "", err
+		return
 	}
 
-	res := Response{}
-	
 	// If no id is provided, we assume POST
 	if id == "" {
 		_, err = c.execJSON("POST", c.URL.Path, &res, doc, nil, nil)
@@ -81,14 +79,14 @@ func (c *Client) Save(doc interface{}) (string, string, error) {
 	}
 
 	if err != nil {
-		return "", "", err
+		return
 	}
 	
 	if res.Error != "" {
-		return "", "", fmt.Errorf(fmt.Sprintf("%s: %s", res.Error, res.Reason))
+		return res, fmt.Errorf(fmt.Sprintf("%s: %s", res.Error, res.Reason))
 	}
 
-	return res.ID, res.Rev, nil
+	return
 }
 
 func (c *Client) Get(id string, doc interface{}) error {
@@ -114,7 +112,7 @@ type BulkSaveRequest struct {
 	Docs []interface{} `json:"docs"`
 }
 
-func (c *Client) BulkSave(docs ...interface{}) (resp *http.Response, err error) {
+func (c *Client) BulkSave(docs ...interface{}) (resp *[]Response, code int, err error) {
 	bulkSaveRequest := &BulkSaveRequest{Docs: docs}
 	reader, err := docReader(bulkSaveRequest)
 		
@@ -122,7 +120,11 @@ func (c *Client) BulkSave(docs ...interface{}) (resp *http.Response, err error) 
 	if err != nil {
 		return
 	}
-	resp, err = http.DefaultClient.Do(req)
+	httpResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	code, err = c.HandleResponse(httpResp, &resp)
 	if err != nil {
 		return
 	}
@@ -154,7 +156,7 @@ func (c *Client) View(design string, name string, options *url.Values) (*MultiDo
 	return multiDocResponse, nil
 }
 
-func (c *Client) Copy(src string, dest string, destRev *string) (resp *http.Response, err error) {
+func (c *Client) Copy(src string, dest string, destRev *string) (resp *Response, code int, err error) {
 	if destRev != nil {
 		dest += "?rev=" + *destRev
 	}
@@ -164,7 +166,11 @@ func (c *Client) Copy(src string, dest string, destRev *string) (resp *http.Resp
 	if err != nil {
 		return
 	}
-	resp, err = http.DefaultClient.Do(req)
+	httpResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	code, err = c.HandleResponse(httpResp, &resp)
 	if err != nil {
 		return
 	}
@@ -189,7 +195,31 @@ func (c *Client) NewRequest(method, url string, body io.Reader, headers *http.He
 	return
 }
 
-func (c *Client) handleResponseError(code int, resBytes []byte) error {
+func (c *Client) UrlString(path string, values *url.Values) string {
+	u := *c.URL
+	u.Path = path
+	if values != nil {
+		u.RawQuery = values.Encode()
+	}
+	return u.String()
+}
+
+func (c *Client) HandleResponse(resp *http.Response, result interface{}) (code int, err error) {
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+	code = resp.StatusCode
+	if err = c.HandleResponseError(code, body); err != nil {
+		return code, err
+	}
+	if err = json.Unmarshal(body, result); err != nil {
+		return 0, err
+	}
+	return
+}
+
+func (c *Client) HandleResponseError(code int, resBytes []byte) error {
 	if code < 200 || code >= 300 {
 		res := Response{}
 		if err := json.Unmarshal(resBytes, &res); err != nil {
@@ -200,21 +230,12 @@ func (c *Client) handleResponseError(code int, resBytes []byte) error {
 	return nil
 }
 
-func (c *Client) UrlString(path string, values *url.Values) string {
-	u := *c.URL
-	u.Path = path
-	if values != nil {
-		u.RawQuery = values.Encode()
-	}
-	return u.String()
-}
-
 func (c *Client) execJSON(method string, path string, result interface{}, doc interface{}, values *url.Values, headers *http.Header) (int, error) {
 	resBytes, code, err := c.execRead(method, path, doc, values, headers)
 	if err != nil {
 		return 0, err
 	}
-	if err = c.handleResponseError(code, resBytes); err != nil {
+	if err = c.HandleResponseError(code, resBytes); err != nil {
 		return code, err
 	}
 	if err = json.Unmarshal(resBytes, result); err != nil {
