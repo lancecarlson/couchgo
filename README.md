@@ -14,6 +14,8 @@ c.CreateDB("myleathercouch")
 lc := NewClient("http://localhost:5984/myleathcouch")
 
 type Cat struct {
+  ID string `json:"_id,omitempty"`
+  Rev string `json:"_rev,omitempty"`
   Name string
   Cool bool
 }
