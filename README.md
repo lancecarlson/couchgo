@@ -16,6 +16,7 @@ lc := NewClient("http://localhost:5984/myleathcouch")
 type Cat struct {
   ID string `json:"_id,omitempty"`
   Rev string `json:"_rev,omitempty"`
+  Deleted bool `json:"_deleted,omitempty"`
   Name string
   Cool bool
 }
@@ -37,12 +38,18 @@ fmt.Println(lazyCat)
 lc.Delete(res.ID, res.Rev)
 
 params := url.Values{"limit": []string{"5"}}
-results, err := c.ViewRaw("myapp", "all", &params)
+results, err := c.View("myapp", "all", &params)
 if err != nil {
    // Do whatever
 }
 
 fmt.Println(results)
+
+for _, row := range res.Rows {
+  cat := &Cat{}
+  couch.Remarshal(row.Value, cat)
+  fmt.Println(cat)
+}
 ```
 
 TODO (Top to bottom priority)

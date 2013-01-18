@@ -133,16 +133,33 @@ func TestBulkSave(t *testing.T) {
 	fmt.Println("/BulkSave")
 }
 
+type Dog struct {
+	ID string `json:"_id,omitempty"`
+	Rev string `json:"_rev,omitempty"`
+	Type string `json:"type"`
+	Name string
+}
+
 func TestView(t *testing.T) {
 	c, _ := NewClientURL(DB)
 
-	params := url.Values{"limit": []string{"2"}}
-	res, err := c.View("dog", "all", &params)
+	c.Save(&Dog{Name: "Savannah", Type: "dog"})
+
+	params := url.Values{"limit": []string{"5"}}
+	res, err := c.View("dog", "dog", &params)
 	if err != nil {
 		t.Error(err)
 	}
 
+	for _, row := range res.Rows {
+		dog := &Dog{}
+		Remarshal(row.Value, dog)
+		fmt.Println(dog)
+	}
+
+	fmt.Println("View")
 	fmt.Println(res)
+	fmt.Println("View")
 }
 
 func TestCopy(t *testing.T) {
