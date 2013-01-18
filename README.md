@@ -38,7 +38,7 @@ fmt.Println(lazyCat)
 lc.Delete(res.ID, res.Rev)
 
 params := url.Values{"limit": []string{"5"}}
-results, err := c.View("myapp", "all", &params)
+results, err := c.View("myapp", "all", &params, nil)
 if err != nil {
    // Do whatever
 }

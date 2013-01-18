@@ -143,17 +143,42 @@ type Row struct {
 	Value interface{}
 }
 
-func (c *Client) View(design string, name string, options *url.Values) (*MultiDocResponse, error) {
-	res, _, err := c.execRead("GET", c.DBPath() + "/_design/" + design + "/_view/" + name, nil, options, nil)
-	if err != nil {
-		return nil, err
+type KeysRequest struct {
+	Keys []string `json:"keys"`
+}
+
+func (c *Client) View(design string, name string, options *url.Values, keys *[]string) (multiDocResponse *MultiDocResponse, err error) {
+	url := c.UrlString(c.DBPath() + "/_design/" + design + "/_view/" + name, options)
+	
+	method := ""
+	body := new(bytes.Buffer)
+	if keys != nil {
+		reqJson, _ := json.Marshal(KeysRequest{Keys: *keys})
+		body = bytes.NewBuffer(reqJson)
+		method = "POST"
+	} else {
+		method = "GET"
 	}
 
-	multiDocResponse := &MultiDocResponse{}
-	if err = json.Unmarshal(res, multiDocResponse); err != nil {
-		return nil, err
+	req, err := c.NewRequest(method, url, body, nil)
+	if err != nil {
+		return
 	}
-	return multiDocResponse, nil
+
+	httpResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 
+	}
+
+	respBody, err := ioutil.ReadAll(httpResp.Body)
+	if err != nil {
+		return 
+	}
+
+	if err = json.Unmarshal(respBody, &multiDocResponse); err != nil {
+		return 
+	}
+	return 
 }
 
 func (c *Client) Copy(src string, dest string, destRev *string) (resp *Response, code int, err error) {

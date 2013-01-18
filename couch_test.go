@@ -146,7 +146,7 @@ func TestView(t *testing.T) {
 	c.Save(&Dog{Name: "Savannah", Type: "dog"})
 
 	params := url.Values{"limit": []string{"5"}}
-	res, err := c.View("dog", "dog", &params)
+	res, err := c.View("dog", "dog", &params, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -160,6 +160,19 @@ func TestView(t *testing.T) {
 	fmt.Println("View")
 	fmt.Println(res)
 	fmt.Println("View")
+
+	dog1 := Dog{ID: "dog1", Type: "dog"}
+	dog2 := Dog{ID: "dog2", Type: "dog"}
+	c.BulkSave(dog1, dog2)
+	
+	resp, err := c.View("dog", "dog", nil, &[]string{"dog1", "dog2"})
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println("ViewWithKeys")
+	fmt.Println(resp)
+	fmt.Println("ViewWithKeys")
 }
 
 func TestCopy(t *testing.T) {
