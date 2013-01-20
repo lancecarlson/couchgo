@@ -47,22 +47,41 @@ func (c *Client) AllDBs() ([]string, error) {
 //func (c *Client) AllDesignDocs() {
 //}
 
-func (c *Client) CreateDB(name string) (map[string] interface{}, error) {
-	res := map[string]interface{}{}
-	_, err := c.execJSON("PUT", "/" + name, &res, nil, nil, nil)
+func (c *Client) CreateDB() (resp *Response, code int, err error) {
+	req, err := c.NewRequest("PUT", c.UrlString(c.DBPath(), nil), nil, nil)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return res, nil
+
+	httpResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+
+	code, err = c.HandleResponse(httpResp, &resp)
+	if err != nil {
+		return
+	}
+
+	return 
 }
 
-func (c *Client) DeleteDB(name string) (map[string] interface{}, error) {
-	res := map[string]interface{}{}
-	_, err := c.execJSON("DELETE", "/" + name, &res, nil, nil, nil)
+func (c *Client) DeleteDB() (resp *Response, code int, err error) {
+	req, err := c.NewRequest("DELETE", c.UrlString(c.DBPath(), nil), nil, nil)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return res, nil
+
+	httpResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+
+	code, err = c.HandleResponse(httpResp, &resp)
+	if err != nil {
+		return
+	}
+	return 
 }
 
 func (c *Client) Save(doc interface{}) (res *Response, err error) {

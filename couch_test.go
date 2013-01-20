@@ -7,12 +7,13 @@ import (
 )
 
 const (
-	URL = "http://localhost:5984"
-	DB = "http://localhost:5984/couch-go-testdb-data"
+	Host = "http://localhost:5984"
+	CreateDeleteDB = Host + "/couch-go-delete-db"
+	DB = Host + "/couch-go-testdb-data"
 )
 
 func TestAllDBs(t *testing.T) {
-	c, _ := NewClientURL(URL)
+	c, _ := NewClientURL(Host)
 	results, err := c.AllDBs()
 
 	fmt.Println(results)
@@ -27,17 +28,19 @@ func TestAllDBs(t *testing.T) {
 }
 
 func TestCreateAndDeleteDB(t *testing.T) {
-	c, _ := NewClientURL(URL)
+	c, _ := NewClientURL(CreateDeleteDB)
 	
-	res, err := c.CreateDB("couch-go-testdb")
+	res, _, err := c.CreateDB()
 	if err != nil {
 		t.Error(err)
 	}
+	fmt.Println(res)
 
-	res, err = c.DeleteDB("couch-go-testdb")
-	if res["ok"] != true {
+	res, _, err = c.DeleteDB()
+	if res.Ok != true {
 		t.Error("Problem deleting")
 	}
+	fmt.Println(res)
 
 	if err != nil {
 		t.Error(err)
