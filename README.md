@@ -7,11 +7,9 @@ API Overview
 ============
 
 ```go
-c := NewClient("http://localhost:5984")
+c := NewClient("http://localhost:5984/myleathercouch")
 
-c.CreateDB("myleathercouch")
-
-lc := NewClient("http://localhost:5984/myleathcouch")
+c.CreateDB()
 
 type Cat struct {
   ID string `json:"_id,omitempty"`
@@ -23,7 +21,7 @@ type Cat struct {
 
 cat := Cat{Name: "Octo", Cool: true}
 
-res, err := lc.Save(cat)
+res, err := c.Save(cat)
 
 if err != nil {
   // Do whatever
@@ -31,11 +29,11 @@ if err != nil {
 
 lazyCat := Cat{}
 
-err := lc.Get(res.ID, lazyCat)
+err := c.Get(res.ID, lazyCat)
 
 fmt.Println(lazyCat)
 
-lc.Delete(res.ID, res.Rev)
+c.Delete(res.ID, res.Rev)
 
 params := url.Values{"limit": []string{"5"}}
 results, err := c.View("myapp", "all", &params, nil)
