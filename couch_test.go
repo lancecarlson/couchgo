@@ -8,6 +8,8 @@ import (
 
 const (
 	Host = "http://localhost:5984"
+	ReplicateSrcDB = Host + "/couch-go-replicate-src"
+	ReplicateTarDB = Host + "/couch-go-replicate-tar"
 	CreateDeleteDB = Host + "/couch-go-delete-db"
 	DB = Host + "/couch-go-testdb-data"
 )
@@ -182,6 +184,20 @@ func TestCopy(t *testing.T) {
 	c, _ := NewClientURL(DB)
 	
 	res, _, err := c.Copy("explicit", "explicit-copy", nil)
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(res)
+}
+
+func TestReplicate(t *testing.T) {
+	c, _ := NewClientURL(Host)
+
+	req := &ReplicateRequest{
+		Source: ReplicateSrcDB,
+		Target: ReplicateTarDB,
+	}
+	res, _, err := c.Replicate(req)
 	if err != nil {
 		t.Error(err)
 	}

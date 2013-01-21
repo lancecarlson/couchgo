@@ -221,6 +221,44 @@ func (c *Client) Copy(src string, dest string, destRev *string) (resp *Response,
 	return 
 }
 
+type ReplicateRequest struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+	Cancel bool `json:"cancel,omitempty"`
+	Continuous bool `json:"continuous,omitempty"`
+	CreateTarget bool `json:"create_target,omitempty"`
+	DocIDs []string `json:"doc_ids,omitempty"`
+	Filter string `json:"filter,omitempty"`
+	Proxy string `json:"proxy,omitempty"`
+	QueryParams map[string]string `json:"query_params,omitempty"`
+}
+
+type ReplicateResponse struct {
+	Ok bool `json:"ok"`
+	LocalID bool `json:"_local_id"`
+}
+
+func (c *Client) Replicate(repReq *ReplicateRequest) (resp *ReplicateResponse, code int, err error) {
+	reqReader, err := docReader(repReq)
+	if err != nil {
+		return
+	}
+
+	req, err := c.NewRequest("POST", c.UrlString("/_replicate", nil), reqReader, nil)
+	if err != nil {
+		return
+	}
+	httpResp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	code, err = c.HandleResponse(httpResp, &resp)
+	if err != nil {
+		return
+	}
+	return
+}
+
 func (c *Client) DBPath() string {
 	return c.URL.Path
 }
