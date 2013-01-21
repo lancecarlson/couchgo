@@ -51,6 +51,5 @@ for _, row := range res.Rows {
 ```
 
 TODO (Top to bottom priority)
-* Replication
 * _changes
 * Attachments
