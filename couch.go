@@ -158,7 +158,7 @@ type MultiDocResponse struct {
 
 type Row struct {
 	ID *string
-	Key *string
+	Key interface{}
 	Value interface{}
 }
 
