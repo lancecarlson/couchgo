@@ -160,6 +160,7 @@ type Row struct {
 	ID *string
 	Key interface{}
 	Value interface{}
+	Doc interface{}
 }
 
 type KeysRequest struct {
