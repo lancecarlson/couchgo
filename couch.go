@@ -186,7 +186,7 @@ func (c *Client) View(design string, name string, options *url.Values, keys *[]s
 	}
 
 	httpResp, err := http.DefaultClient.Do(req)
-	defer httpResp.Close()
+	defer httpResp.Body.Close()
 	if err != nil {
 		return
 	}

@@ -25,13 +25,17 @@ func newClientURL(url string) (client *Client, err error) {
 
 func TestAllDBs(t *testing.T) {
 	c, _ := newClientURL(Host)
-	if results, err := c.AllDBs(); err != nil || results == nil {
+	if results, err := c.AllDBs(); err != nil || len(results) == 0 {
 		t.Fatal(err, results)
 	}
+
+	c, _ = newClientURL(DB)
+
 }
 
 func TestCreateAndDeleteDB(t *testing.T) {
 	c, _ := newClientURL(CreateDeleteDB)
+	c.DeleteDB()
 	if res, code, err := c.CreateDB(); err != nil {
 		t.Fatal(err, code, res)
 	}
@@ -71,21 +75,20 @@ func TestSaveWithId(t *testing.T) {
 
 func TestGetAndSave(t *testing.T) {
 	c, _ := newClientURL(DB)
-
-	doc := map[string]interface{}{}
-	err := c.Get("explicit", &doc)
-	if err != nil {
-		t.Error(err)
+	doc := map[string]interface{}{
+		"_id": "explicit",
+		"explicit": "explicite",
+	}
+	c.Save(doc)
+	if err := c.Get("explicit", &doc); err != nil {
+		t.Fatal(err)
 	}
 
 	doc["updatekey"] = "updated"
 
-	res, err := c.Save(doc)
-	if err != nil {
-		t.Error(err)
+	if res, err := c.Save(doc); err != nil {
+		t.Fatal(res, err)
 	}
-	fmt.Println("GetAndSave")
-	fmt.Println(res)
 }
 
 func TestDelete(t *testing.T) {
