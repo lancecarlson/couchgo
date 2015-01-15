@@ -1,74 +1,62 @@
 package couch
 
 import (
-	"testing"
 	"fmt"
 	"net/url"
+	"testing"
 )
 
 const (
-	Host = "http://localhost:5984"
+	Host           = "http://localhost:5984"
 	ReplicateSrcDB = Host + "/couch-go-replicate-src"
 	ReplicateTarDB = Host + "/couch-go-replicate-tar"
 	CreateDeleteDB = Host + "/couch-go-delete-db"
-	DB = Host + "/couch-go-testdb-data"
+	DB             = Host + "/couch-go-testdb-data"
 )
 
-func TestAllDBs(t *testing.T) {
-	c, _ := NewClientURL(Host)
-	results, err := c.AllDBs()
-
-	fmt.Println(results)
-
-	if err != nil {
-		t.Error(err)
+func newClientURL(url string) (client *Client, err error) {
+	client, _ = NewClientURL(url)
+	if url != Host {
+		client.DeleteDB()
+		client.CreateDB()
 	}
-	
-	if results == nil {
-		t.Error("no results")
+	return
+}
+
+func TestAllDBs(t *testing.T) {
+	c, _ := newClientURL(Host)
+	if results, err := c.AllDBs(); err != nil || results == nil {
+		t.Fatal(err, results)
 	}
 }
 
 func TestCreateAndDeleteDB(t *testing.T) {
-	c, _ := NewClientURL(CreateDeleteDB)
-	
-	res, _, err := c.CreateDB()
-	if err != nil {
-		t.Error(err)
+	c, _ := newClientURL(CreateDeleteDB)
+	if res, code, err := c.CreateDB(); err != nil {
+		t.Fatal(err, code, res)
 	}
-	fmt.Println(res)
 
-	res, _, err = c.DeleteDB()
-	if res.Ok != true {
-		t.Error("Problem deleting")
-	}
-	fmt.Println(res)
-
-	if err != nil {
-		t.Error(err)
+	if res, code, err := c.DeleteDB(); err != nil || !res.Ok {
+		t.Fatal(res, code, err)
 	}
 }
 
 func TestSave(t *testing.T) {
-	c, _ := NewClientURL(DB)
-
-	res, err := c.Save(map[string]string{"test1": "value1", "test2": "value2"})
-	if err != nil {
-		t.Error(err)
+	c, _ := newClientURL(DB)
+	if res, err := c.Save(map[string]string{"test1": "value1", "test2": "value2"}); err != nil {
+		t.Fatal(res, err)
 	}
-	fmt.Println("Save")
-	fmt.Println(res)
 }
 
 type Cow struct {
-	ID string `json:"_id,omitempty"`
-	Rev string `json:"_rev,omitempty"`
+	ID   string `json:"_id,omitempty"`
+	Rev  string `json:"_rev,omitempty"`
 	Name string
 }
 
 func TestSaveWithId(t *testing.T) {
-	c, _ := NewClientURL(DB)
-	
+	c, _ := newClientURL(DB)
+
 	cow := new(Cow)
 	c.Get("testcow", cow)
 	c.Delete("testcow", cow.Rev)
@@ -82,7 +70,7 @@ func TestSaveWithId(t *testing.T) {
 }
 
 func TestGetAndSave(t *testing.T) {
-	c, _ := NewClientURL(DB)
+	c, _ := newClientURL(DB)
 
 	doc := map[string]interface{}{}
 	err := c.Get("explicit", &doc)
@@ -101,8 +89,8 @@ func TestGetAndSave(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	c, _ := NewClientURL(DB)
-	
+	c, _ := newClientURL(DB)
+
 	doc := map[string]string{"_id": "deleteme"}
 	res, err := c.Save(doc)
 	if err != nil {
@@ -115,15 +103,15 @@ func TestDelete(t *testing.T) {
 }
 
 type Cat struct {
-	ID string `json:"_id,omitempty"`
-	Rev string `json:"_rev,omitempty"`
+	ID   string `json:"_id,omitempty"`
+	Rev  string `json:"_rev,omitempty"`
 	Name string
 	Cool bool
 }
 
 func TestBulkSave(t *testing.T) {
-	c, _ := NewClientURL(DB)
-	
+	c, _ := newClientURL(DB)
+
 	cat1 := Cat{Name: "Hakki", Cool: true}
 	cat2 := Cat{Name: "Farb", Cool: false}
 	cats := []interface{}{}
@@ -139,67 +127,47 @@ func TestBulkSave(t *testing.T) {
 }
 
 type Dog struct {
-	ID string `json:"_id,omitempty"`
-	Rev string `json:"_rev,omitempty"`
+	ID   string `json:"_id,omitempty"`
+	Rev  string `json:"_rev,omitempty"`
 	Type string `json:"type"`
 	Name string
 }
 
 func TestView(t *testing.T) {
-	c, _ := NewClientURL(DB)
+	c, _ := newClientURL(DB)
 
 	c.Save(&Dog{Name: "Savannah", Type: "dog"})
 
 	params := url.Values{"limit": []string{"5"}}
-	res, err := c.View("dog", "dog", &params, nil)
-	if err != nil {
-		t.Error(err)
+	if res, err := c.View("dog", "dog", &params, nil); err != nil {
+		t.Fatal(res, err)
 	}
-
-	for _, row := range res.Rows {
-		dog := &Dog{}
-		Remarshal(row.Value, dog)
-		fmt.Println(dog)
-	}
-
-	fmt.Println("View")
-	fmt.Println(res)
-	fmt.Println("View")
-
 	dog1 := Dog{ID: "dog1", Type: "dog"}
 	dog2 := Dog{ID: "dog2", Type: "dog"}
 	c.BulkSave(dog1, dog2)
-	
-	resp, err := c.View("dog", "dog", nil, &[]string{"dog1", "dog2"})
-	if err != nil {
-		t.Error(err)
-	}
 
-	fmt.Println("ViewWithKeys")
-	fmt.Println(resp)
-	fmt.Println("ViewWithKeys")
+	if res, err := c.View("dog", "dog", nil, &[]string{"dog1", "dog2"}); err != nil {
+		t.Fatal(res, err)
+	}
 }
 
 func TestCopy(t *testing.T) {
-	c, _ := NewClientURL(DB)
-	
-	res, _, err := c.Copy("explicit", "explicit-copy", nil)
-	if err != nil {
-		t.Error(err)
+	c, _ := newClientURL(DB)
+
+	if res, _, err := c.Copy("explicit", "explicit-copy", nil); err == nil {
+		t.Fatal(res)
 	}
-	fmt.Println(res)
 }
 
 func TestReplicate(t *testing.T) {
-	c, _ := NewClientURL(Host)
-
+	c, _ := newClientURL(Host)
+	newClientURL(ReplicateSrcDB)
+	newClientURL(ReplicateTarDB)
 	req := &ReplicateRequest{
 		Source: ReplicateSrcDB,
 		Target: ReplicateTarDB,
 	}
-	res, _, err := c.Replicate(req)
-	if err != nil {
-		t.Error(err)
+	if res, _, err := c.Replicate(req); err != nil {
+		t.Fatal(res, err)
 	}
-	fmt.Println(res)
 }
