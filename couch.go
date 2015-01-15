@@ -84,6 +84,16 @@ func (c *Client) DeleteDB() (resp *Response, code int, err error) {
 	return
 }
 
+func (c *Client) Add(id string, doc interface{}) (res *Response, err error) {
+	if _, err = c.execJSON("PUT", c.DocPath(id), &res, doc, nil, nil); err != nil {
+		return
+	} else if res.Error != "" {
+		err = fmt.Errorf(fmt.Sprintf("%s: %s", res.Error, res.Reason))
+		return
+	}
+	return
+}
+
 func (c *Client) Save(doc interface{}) (res *Response, err error) {
 	id, _, err := ParseIdRev(doc)
 	if err != nil {
@@ -354,7 +364,6 @@ func (c *Client) exec(method string, path string, doc interface{}, values *url.V
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		defer resp.Body.Close()
 		return nil, 0, err
 	}
 
