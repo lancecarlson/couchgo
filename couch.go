@@ -43,6 +43,23 @@ func (c *Client) AllDBs() ([]string, error) {
 	return res, nil
 }
 
+func (c *Client) AllDocs() (ids []string, err error) {
+	doc := make(map[string]interface{})
+	if _, err = c.execJSON("GET", c.DocPath("_all_docs"), &doc, nil, nil, nil); err != nil {
+		return
+	}
+	if	obj, found:=doc["rows"]; found {
+		ids = make([]string, 0)
+		rows := obj.([]interface{})
+		for i := range rows {
+			row := rows[i].(map[string]interface{})
+			id := row["id"].(string)
+			ids = append(ids, id)
+		}
+	}
+	return
+}
+
 // TODO
 //func (c *Client) AllDesignDocs() {
 //}
@@ -138,11 +155,11 @@ func (c *Client) Delete(id string, rev string) error {
 }
 
 type BulkSaveRequest struct {
-	Docs []interface{} `json:"docs"`
+	Docs []interface{} `json:"ids"`
 }
 
-func (c *Client) BulkSave(docs ...interface{}) (resp *[]Response, code int, err error) {
-	bulkSaveRequest := &BulkSaveRequest{Docs: docs}
+func (c *Client) BulkSave(ids ...interface{}) (resp *[]Response, code int, err error) {
+	bulkSaveRequest := &BulkSaveRequest{Docs: ids}
 	reader, err := docReader(bulkSaveRequest)
 
 	req, err := c.NewRequest("POST", c.UrlString(c.DBPath()+"/_bulk_docs", nil), reader, nil)

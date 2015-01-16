@@ -30,7 +30,32 @@ func TestAllDBs(t *testing.T) {
 	}
 
 	c, _ = newClientURL(DB)
+	if results, err := c.AllDBs(); err != nil || len(results) == 0 {
+		t.Fatal(err, results)
+	}
+}
 
+func TestAllDocs(t *testing.T) {
+	c, _ := newClientURL(DB)
+	if ids, err := c.AllDocs(); err != nil {
+		t.Fatal(ids, err)
+	} else if len(ids) != 0 {
+		t.Fatal(ids)
+	}
+
+	id := "a0000000"
+	obj := map[string]interface{}{
+		"id":   id,
+		"name": "me",
+	}
+	c.Add(id, obj)
+	if ids, err := c.AllDocs(); err != nil {
+		t.Fatal(ids, err)
+	} else if len(ids) != 1 {
+		t.Fatal(ids)
+	} else if ids[0] != id {
+		t.Fatal(ids)
+	}
 }
 
 func TestCreateAndDeleteDB(t *testing.T) {
@@ -75,18 +100,18 @@ func TestSaveWithId(t *testing.T) {
 
 func TestGetAndSave(t *testing.T) {
 	c, _ := newClientURL(DB)
-	doc := map[string]interface{}{
-		"_id": "explicit",
+	ids := map[string]interface{}{
+		"_id":      "explicit",
 		"explicit": "explicite",
 	}
-	c.Save(doc)
-	if err := c.Get("explicit", &doc); err != nil {
+	c.Save(ids)
+	if err := c.Get("explicit", &ids); err != nil {
 		t.Fatal(err)
 	}
 
-	doc["updatekey"] = "updated"
+	ids["updatekey"] = "updated"
 
-	if res, err := c.Save(doc); err != nil {
+	if res, err := c.Save(ids); err != nil {
 		t.Fatal(res, err)
 	}
 }
@@ -94,8 +119,8 @@ func TestGetAndSave(t *testing.T) {
 func TestDelete(t *testing.T) {
 	c, _ := newClientURL(DB)
 
-	doc := map[string]string{"_id": "deleteme"}
-	res, err := c.Save(doc)
+	ids := map[string]string{"_id": "deleteme"}
+	res, err := c.Save(ids)
 	if err != nil {
 		t.Error(err)
 	}
