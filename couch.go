@@ -1,20 +1,20 @@
 package couch
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
-	"io"
-	"encoding/json"
-	"io/ioutil"
-	"bytes"
-	"fmt"
 )
 
 type Response struct {
-	Ok bool
-	ID string
-	Rev string
-	Error string
+	Ok     bool
+	ID     string
+	Rev    string
+	Error  string
 	Reason string
 }
 
@@ -43,6 +43,23 @@ func (c *Client) AllDBs() ([]string, error) {
 	return res, nil
 }
 
+func (c *Client) AllDocs() (ids []string, err error) {
+	doc := make(map[string]interface{})
+	if _, err = c.execJSON("GET", c.DocPath("_all_docs"), &doc, nil, nil, nil); err != nil {
+		return
+	}
+	if	obj, found:=doc["rows"]; found {
+		ids = make([]string, 0)
+		rows := obj.([]interface{})
+		for i := range rows {
+			row := rows[i].(map[string]interface{})
+			id := row["id"].(string)
+			ids = append(ids, id)
+		}
+	}
+	return
+}
+
 // TODO
 //func (c *Client) AllDesignDocs() {
 //}
@@ -63,7 +80,7 @@ func (c *Client) CreateDB() (resp *Response, code int, err error) {
 		return
 	}
 
-	return 
+	return
 }
 
 func (c *Client) DeleteDB() (resp *Response, code int, err error) {
@@ -81,7 +98,17 @@ func (c *Client) DeleteDB() (resp *Response, code int, err error) {
 	if err != nil {
 		return
 	}
-	return 
+	return
+}
+
+func (c *Client) Add(id string, doc interface{}) (res *Response, err error) {
+	if _, err = c.execJSON("PUT", c.DocPath(id), &res, doc, nil, nil); err != nil {
+		return
+	} else if res.Error != "" {
+		err = fmt.Errorf(fmt.Sprintf("%s: %s", res.Error, res.Reason))
+		return
+	}
+	return
 }
 
 func (c *Client) Save(doc interface{}) (res *Response, err error) {
@@ -100,7 +127,7 @@ func (c *Client) Save(doc interface{}) (res *Response, err error) {
 	if err != nil {
 		return
 	}
-	
+
 	if res.Error != "" {
 		return res, fmt.Errorf(fmt.Sprintf("%s: %s", res.Error, res.Reason))
 	}
@@ -128,14 +155,14 @@ func (c *Client) Delete(id string, rev string) error {
 }
 
 type BulkSaveRequest struct {
-	Docs []interface{} `json:"docs"`
+	Docs []interface{} `json:"ids"`
 }
 
-func (c *Client) BulkSave(docs ...interface{}) (resp *[]Response, code int, err error) {
-	bulkSaveRequest := &BulkSaveRequest{Docs: docs}
+func (c *Client) BulkSave(ids ...interface{}) (resp *[]Response, code int, err error) {
+	bulkSaveRequest := &BulkSaveRequest{Docs: ids}
 	reader, err := docReader(bulkSaveRequest)
-		
-	req, err := c.NewRequest("POST", c.UrlString(c.DBPath() + "/_bulk_docs", nil), reader, nil)
+
+	req, err := c.NewRequest("POST", c.UrlString(c.DBPath()+"/_bulk_docs", nil), reader, nil)
 	if err != nil {
 		return
 	}
@@ -147,20 +174,20 @@ func (c *Client) BulkSave(docs ...interface{}) (resp *[]Response, code int, err 
 	if err != nil {
 		return
 	}
-	return 
+	return
 }
 
 type MultiDocResponse struct {
 	TotalRows uint64 `json:"total_rows"`
-	Offset uint64
-	Rows []Row
+	Offset    uint64
+	Rows      []Row
 }
 
 type Row struct {
-	ID *string
-	Key interface{}
+	ID    *string
+	Key   interface{}
 	Value interface{}
-	Doc interface{}
+	Doc   interface{}
 }
 
 type KeysRequest struct {
@@ -168,8 +195,8 @@ type KeysRequest struct {
 }
 
 func (c *Client) View(design string, name string, options *url.Values, keys *[]string) (multiDocResponse *MultiDocResponse, err error) {
-	url := c.UrlString(c.DBPath() + "/_design/" + design + "/_view/" + name, options)
-	
+	url := c.UrlString(c.DBPath()+"/_design/"+design+"/_view/"+name, options)
+
 	method := ""
 	body := new(bytes.Buffer)
 	if keys != nil {
@@ -186,19 +213,20 @@ func (c *Client) View(design string, name string, options *url.Values, keys *[]s
 	}
 
 	httpResp, err := http.DefaultClient.Do(req)
+	defer httpResp.Body.Close()
 	if err != nil {
-		return 
+		return
 	}
 
 	respBody, err := ioutil.ReadAll(httpResp.Body)
 	if err != nil {
-		return 
+		return
 	}
 
 	if err = json.Unmarshal(respBody, &multiDocResponse); err != nil {
-		return 
+		return
 	}
-	return 
+	return
 }
 
 func (c *Client) Copy(src string, dest string, destRev *string) (resp *Response, code int, err error) {
@@ -219,23 +247,23 @@ func (c *Client) Copy(src string, dest string, destRev *string) (resp *Response,
 	if err != nil {
 		return
 	}
-	return 
+	return
 }
 
 type ReplicateRequest struct {
-	Source string `json:"source"`
-	Target string `json:"target"`
-	Cancel bool `json:"cancel,omitempty"`
-	Continuous bool `json:"continuous,omitempty"`
-	CreateTarget bool `json:"create_target,omitempty"`
-	DocIDs []string `json:"doc_ids,omitempty"`
-	Filter string `json:"filter,omitempty"`
-	Proxy string `json:"proxy,omitempty"`
-	QueryParams map[string]string `json:"query_params,omitempty"`
+	Source       string            `json:"source"`
+	Target       string            `json:"target"`
+	Cancel       bool              `json:"cancel,omitempty"`
+	Continuous   bool              `json:"continuous,omitempty"`
+	CreateTarget bool              `json:"create_target,omitempty"`
+	DocIDs       []string          `json:"doc_ids,omitempty"`
+	Filter       string            `json:"filter,omitempty"`
+	Proxy        string            `json:"proxy,omitempty"`
+	QueryParams  map[string]string `json:"query_params,omitempty"`
 }
 
 type ReplicateResponse struct {
-	Ok bool `json:"ok"`
+	Ok      bool `json:"ok"`
 	LocalID bool `json:"_local_id"`
 }
 
@@ -288,6 +316,7 @@ func (c *Client) UrlString(path string, values *url.Values) string {
 }
 
 func (c *Client) HandleResponse(resp *http.Response, result interface{}) (code int, err error) {
+	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return
@@ -332,7 +361,7 @@ func (c *Client) execRead(method string, path string, doc interface{}, values *u
 	if err != nil {
 		return nil, 0, err
 	}
-
+	defer r.Close()
 	resBytes, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, 0, err
@@ -340,7 +369,7 @@ func (c *Client) execRead(method string, path string, doc interface{}, values *u
 	return resBytes, code, nil
 }
 
-func (c *Client) exec(method string, path string, doc interface{}, values *url.Values, headers *http.Header) (io.Reader, int, error) {
+func (c *Client) exec(method string, path string, doc interface{}, values *url.Values, headers *http.Header) (io.ReadCloser, int, error) {
 	reqReader, err := docReader(doc)
 	if err != nil {
 		return nil, 0, err
@@ -372,19 +401,19 @@ func docReader(doc interface{}) (io.Reader, error) {
 }
 
 type IdRev struct {
-	ID string `json:"_id"`
+	ID  string `json:"_id"`
 	Rev string `json:"_rev"`
 }
 
 func Remarshal(doc interface{}, newDoc interface{}) (err error) {
 	docJson, err := json.Marshal(doc)
 	if err != nil {
-		return 
+		return
 	}
 
 	err = json.Unmarshal(docJson, newDoc)
 	if err != nil {
-		return 
+		return
 	}
 	return
 }
@@ -394,7 +423,7 @@ func ParseIdRev(doc interface{}) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	
+
 	idRev := &IdRev{}
 	if err = json.Unmarshal(docJson, idRev); err != nil {
 		return "", "", err
@@ -402,4 +431,3 @@ func ParseIdRev(doc interface{}) (string, string, error) {
 
 	return idRev.ID, idRev.Rev, nil
 }
-
